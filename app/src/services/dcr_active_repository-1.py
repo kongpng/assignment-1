@@ -96,9 +96,14 @@ class DcrActiveRepository(object):
             try:
                 response = await client.post(url, auth=self.basic_auth)
                 response.raise_for_status()
-                return response.headers["simulationid"]
+                return response.headers[
+                    "simulationid"
+                ]  # seems correct, based on checking the reeponse of a manual POST request?
+                # the function above parses the HTML but
+                # I am not sure if we need to do the same thing, this seems to work just fine.
             except Exception as e:
-                print(f"Error occred {e}")
+                print(f"Error occured {e}")
+                raise
 
     async def delete_instance(self, graph_id, instance_id):
         url = (
@@ -108,8 +113,10 @@ class DcrActiveRepository(object):
             try:
                 response = await client.delete(url, auth=self.basic_auth)
                 response.raise_for_status()
+                return response.status_code
             except Exception as e:
                 print(f"error occured {e}")
+                raise
 
     async def execute_event(self, graph_id, instance_id, event_id):
         url = f"https://repository.dcrgraphs.net/api/graphs/{graph_id}/sims/{instance_id}/events/{event_id}"
@@ -117,9 +124,10 @@ class DcrActiveRepository(object):
             try:
                 response = await client.post(url, auth=self.basic_auth)
                 response.raise_for_status()
-                return True
+                return response.status_code
             except Exception as e:
                 print(f"error occured {e}")
+                raise
 
     async def get_events(
         self, graph_id, instance_id, filter: EventsFilter = EventsFilter.ALL
@@ -144,6 +152,7 @@ class DcrActiveRepository(object):
                 return events
             except Exception as e:
                 print(f"error occured {e}")
+                raise
 
 
 async def check_login_from_dcr(username, password):
@@ -171,7 +180,7 @@ async def check_login_from_dcr(username, password):
 
 
 async def main():
-    graph_id = 1986632
+    graph_id = 1986676
 
     check_login = False
     while check_login == False:
