@@ -18,7 +18,7 @@ class HelloWorld(toga.App):
     all_instances_box = None
     instance_box = None
     current_instance_id = None
-    instances: list = {}
+    instances: dict = {}
     user = None
     connected: bool = False
 
