@@ -1,21 +1,35 @@
 from mysql.connector import connect
 
-db_password = "your db password from azure"
+db_password = "KUuni1235"
 sql_query_template = {}
 sql_query_template["get_dcr_role"] = (
     f"SELECT Role FROM DCRUsers WHERE Email = %(email)s"
 )
 
 # TODO: fill in these templates with the right SQL query
-sql_query_template["get_dcr_role"] = f""
-sql_query_template["update_dcr_role"] = f""
-sql_query_template["get_all_instances"] = f""
-sql_query_template["get_instances_for_user"] = f""
-sql_query_template["insert_instance"] = f""
-sql_query_template["insert_instance_for_user"] = f""
-sql_query_template["update_instance"] = f""
-sql_query_template["delete_instance_from_user_instance"] = f""
-sql_query_template["delete_instance"] = f""
+sql_query_template["get_dcr_role"] = f"SELECT Role FROM DCRUser WHERE Email = %(email)s"
+sql_query_template["update_dcr_role"] = (
+    f"UPDATE DCRUser SET Role = %(role)s WHERE Email = %(email)s"
+)
+sql_query_template["get_all_instances"] = f"SELECT * FROM instance"
+sql_query_template["get_instances_for_user"] = (
+    f"SELECT i.* FROM Instances i JOIN UserInstances ui ON i.InstanceID = ui.InstanceID WHERE ui.Email = %(email)s"
+)
+sql_query_template["insert_instance"] = (
+    f"INSERT INTO Instances (InstanceID, IsInValidState) VALUES (%(instance_id)s, %(is_valid)s)"
+)
+sql_query_template["insert_instance_for_user"] = (
+    f"INSERT INTO UserInstances (Email, InstanceID) VALUES (%(email)s, %(instance_id)s)"
+)
+sql_query_template["update_instance"] = (
+    f"UPDATE Instances SET IsInValidState = %(is_valid)s WHERE InstanceID = %(instance_id)s"
+)
+sql_query_template["delete_instance_from_user_instance"] = (
+    f"DELETE FROM UserInstances WHERE Email = %(email)s AND InstanceID = %(instance_id)s"
+)
+sql_query_template["delete_instance"] = (
+    f"DELETE FROM Instances WHERE InstanceID = %(instance_id)s"
+)
 
 
 def db_connect():
@@ -24,11 +38,11 @@ def db_connect():
     resources_folder = Path(__file__).parent.resolve()
     cert_filepath = str(resources_folder.joinpath("DigiCertGlobalRootCA.crt.pem"))
     cnx = mysql.connector.connect(
-        user="your db user from azure",
+        user="group8",
         password=db_password,
-        host="your db name from azure.mysql.database.azure.com",
+        host="tasklistgroup8.mysql.database.azure.com",
         port=3306,
-        database="your db name from azure",
+        database="tasklistgroup8.mysql.database.azure.com",
         ssl_ca=cert_filepath,
         ssl_disabled=False,
     )
