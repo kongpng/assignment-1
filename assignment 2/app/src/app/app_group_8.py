@@ -13,7 +13,9 @@ from services.dcr_active_repository_group_8 import (
 
 
 class HelloWorld(toga.App):
-    graph_id: str = "1986676"
+    graph_id: str = (
+        "1986676"  # https://dcrgraphs.net/tool/main/Graph?id=e3d0ef56-e918-4804-bcff-6bd7e8493f33
+    )
     dcr_ar = None
     option_container = None
     all_instances_box = None
@@ -123,18 +125,15 @@ class HelloWorld(toga.App):
         self.instances = {}
 
     async def execute_event(self, widget):
-        # Execute the event
         await self.dcr_ar.execute_event(
             self.graph_id, self.current_instance_id, widget.id
         )
 
-        # Check for pending events after execution
         events = await self.dcr_ar.get_events(
             self.graph_id, self.current_instance_id, EventsFilter.ALL
         )
         has_pending = any(event.pending for event in events)
 
-        # Update instance state in database
         dbc.update_instance(self.current_instance_id, not has_pending)
 
         await self.show_instance_box()
