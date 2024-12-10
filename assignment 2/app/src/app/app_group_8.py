@@ -1,16 +1,16 @@
-from services import database_connection as dbc
+from services import database_connection_group_8 as dbc
 import httpx
 import toga
 from toga.style import Pack
 from toga.style.pack import COLUMN, ROW
 from typing import Optional
-from services.dcr_active_repository import (
+from services.dcr_active_repository_group_8 import (
     check_login_from_dcr,
     DcrActiveRepository,
     DcrUser,
     EventsFilter,
 )
-from services import database_connection as dbc
+from app.src.services import database_connection_group_8 as dbc
 
 
 class HelloWorld(toga.App):
@@ -145,7 +145,6 @@ class HelloWorld(toga.App):
             self.all_instances_box.clear()
             self.instances.clear()
 
-            # Get instances from both DCR and database
             dcr_ar_instances = await self.dcr_ar.get_instances(self.graph_id)
             db_instances = dbc.get_all_instances()
             my_instances = dbc.get_instances_for_user(self.user.email)
@@ -153,7 +152,6 @@ class HelloWorld(toga.App):
                 [instance_id for instance_id, _ in my_instances] if my_instances else []
             )
 
-            # Only keep instances that exist in both DCR and database
             if len(dcr_ar_instances) > 0 and db_instances:
                 db_instance_ids = [instance_id for instance_id, _ in db_instances]
                 self.instances = {
@@ -182,7 +180,6 @@ class HelloWorld(toga.App):
             for instance_id, instance_name in self.instances.items():
                 buttons_box = toga.Box(style=Pack(direction=ROW))
 
-                # Only enable buttons if user owns the instance
                 instance_button = toga.Button(
                     instance_name,
                     on_press=self.show_instance,

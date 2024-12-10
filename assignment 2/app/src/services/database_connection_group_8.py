@@ -1,17 +1,18 @@
 from mysql.connector import connect
 
-db_password = "KUuni1235"
+db_password = "KUnet1235"
 sql_query_template = {}
 sql_query_template["get_dcr_role"] = (
     f"SELECT Role FROM DCRUsers WHERE Email = %(email)s"
 )
 
-# TODO: fill in these templates with the right SQL query
-sql_query_template["get_dcr_role"] = f"SELECT Role FROM DCRUser WHERE Email = %(email)s"
-sql_query_template["update_dcr_role"] = (
-    f"UPDATE DCRUser SET Role = %(role)s WHERE Email = %(email)s"
+sql_query_template["get_dcr_role"] = (
+    f"SELECT Role FROM DCRUsers WHERE Email = %(email)s"
 )
-sql_query_template["get_all_instances"] = f"SELECT * FROM instance"
+sql_query_template["update_dcr_role"] = (
+    f"UPDATE DCRUsers SET Role = %(role)s WHERE Email = %(email)s"
+)
+sql_query_template["get_all_instances"] = f"SELECT * FROM Instances"
 sql_query_template["get_instances_for_user"] = (
     f"SELECT i.* FROM Instances i JOIN UserInstances ui ON i.InstanceID = ui.InstanceID WHERE ui.Email = %(email)s"
 )
@@ -25,7 +26,7 @@ sql_query_template["update_instance"] = (
     f"UPDATE Instances SET IsInValidState = %(is_valid)s WHERE InstanceID = %(instance_id)s"
 )
 sql_query_template["delete_instance_from_user_instance"] = (
-    f"DELETE FROM UserInstances WHERE Email = %(email)s AND InstanceID = %(instance_id)s"
+    f"DELETE FROM UserInstances WHERE InstanceID = %(instance_id)s"
 )
 sql_query_template["delete_instance"] = (
     f"DELETE FROM Instances WHERE InstanceID = %(instance_id)s"
@@ -42,7 +43,7 @@ def db_connect():
         password=db_password,
         host="tasklistgroup8.mysql.database.azure.com",
         port=3306,
-        database="tasklistgroup8.mysql.database.azure.com",
+        database="database",
         ssl_ca=cert_filepath,
         ssl_disabled=False,
     )
@@ -114,7 +115,7 @@ def insert_instance(id, valid, email):
         cursor = cnx.cursor(buffered=True)
         cursor.execute(
             sql_query_template["insert_instance"],
-            {"id": id, "valid": valid},
+            {"instance_id": id, "is_valid": valid},
             multi=False,
         )
         cursor.execute(
@@ -135,7 +136,7 @@ def update_instance(id, valid):
         cursor = cnx.cursor(buffered=True)
         cursor.execute(
             sql_query_template["update_instance"],
-            {"id": id, "valid": valid},
+            {"instance_id": id, "is_valid": valid},
             multi=False,
         )
         cnx.commit()
