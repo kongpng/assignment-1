@@ -37,7 +37,7 @@ def db_connect():
 
     resources_folder = Path(__file__).parent.resolve()
     cert_filepath = str(resources_folder.joinpath("DigiCertGlobalRootCA.crt.pem"))
-    cnx = mysql.connector.connect(
+    cnx = connect(
         user="group8",
         password=db_password,
         host="tasklistgroup8.mysql.database.azure.com",
