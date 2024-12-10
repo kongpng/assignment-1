@@ -10,7 +10,6 @@ from services.dcr_active_repository_group_8 import (
     DcrUser,
     EventsFilter,
 )
-from app.src.services import database_connection_group_8 as dbc
 
 
 class HelloWorld(toga.App):
