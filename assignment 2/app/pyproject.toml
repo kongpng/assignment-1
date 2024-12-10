@@ -1,6 +1,6 @@
 # This project was generated with 0.3.20 using template: https://github.com/beeware/briefcase-template@v0.3.20
 [tool.briefcase]
-project_name = "assignment 1"
+project_name = "assignment 2"
 bundle = "com.example"
 version = "0.0.1"
 url = "https://example.com/app"
@@ -10,13 +10,13 @@ author_email = "jane@example.com"
 
 [tool.briefcase.app.app]
 formal_name = "app"
-description = "UACA assignment 1"
+description = "UACA assignment 2"
 long_description = """More details about the app should go here.
 """
 sources = ["src/app", "src/services/"]
 test_sources = ["tests"]
 
-requires = ["httpx"]
+requires = ["httpx", "mysql-connector-python"]
 test_requires = ["pytest"]
 
 [tool.briefcase.app.app.macOS]
