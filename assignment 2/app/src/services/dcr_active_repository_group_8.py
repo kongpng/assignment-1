@@ -130,7 +130,7 @@ class DcrActiveRepository(object):
                 raise
 
     async def get_events(
-        self, graph_id, instance_id, filter: EventsFilter = EventsFilter.ENABLED
+        self, graph_id, instance_id, filter: EventsFilter = EventsFilter.ENABLED_OR_PENDING
     ):
         url = f"https://repository.dcrgraphs.net/api/graphs/{graph_id}/sims/{instance_id}/events"
         url += f"?filter={filter.value.lower()}"
@@ -193,7 +193,7 @@ async def main():
         sim_ids = await dcr_ar.get_instances(graph_id)
         if sim_id in sim_ids.keys():
             print(f"[i] Found the newly created instance with id: {sim_id}")
-            events = await dcr_ar.get_events(graph_id, sim_id, EventsFilter.ENABLED)
+            events = await dcr_ar.get_events(graph_id, sim_id, EventsFilter.ENABLED_OR_PENDING)
             for event in events:
                 print(
                     f"[i] Found event with label: {event.label} (id {event.id}, enabled {event.enabled}, pending {event.pending}, role {event.role if event.role else 'None'})"
@@ -219,7 +219,7 @@ async def main():
                                 f"[i] Successfully executed event: {event_to_execute.label}"
                             )
                         new_events = await dcr_ar.get_events(
-                            graph_id, sim_id, EventsFilter.ENABLED
+                            graph_id, sim_id, EventsFilter.ENABLED_OR_PENDING
                         )
                         print(
                             f"[i] After executing event {event_to_execute.label} with id {event_to_execute.id}"
