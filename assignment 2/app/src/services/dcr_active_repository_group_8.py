@@ -130,7 +130,7 @@ class DcrActiveRepository(object):
                 raise
 
     async def get_events(
-        self, graph_id, instance_id, filter: EventsFilter = EventsFilter.ALL
+        self, graph_id, instance_id, filter: EventsFilter = EventsFilter.ENABLED
     ):
         url = f"https://repository.dcrgraphs.net/api/graphs/{graph_id}/sims/{instance_id}/events"
         url += f"?filter={filter.value.lower()}"
@@ -138,17 +138,12 @@ class DcrActiveRepository(object):
             try:
                 response = await client.get(url, auth=self.basic_auth)
                 # here we get the list of events in the xml format from the response
-                root = ET.fromstring(
-                    response.json()
-                )  # the .json() here is needed because there is a mistmatch in the expected result format between httpx and the dcr rest api. the response is xml.
+                root = ET.fromstring(response.json())  # the .json() here is needed because there is a mistmatch in the expected result format between httpx and the dcr rest api. the response is xml.
                 events_xml = root.findall("event")
                 events = []
                 for event_xml in events_xml:
-                    event = parse_event_from_xml(
-                        event_xml
-                    )  # we parse the events from xml into the DcrEvent class.
+                    event = parse_event_from_xml(event_xml)  # we parse the events from xml into the DcrEvent class.
                     events.append(event)
-
                 return events
             except Exception as e:
                 print(f"error occured {e}")
@@ -198,7 +193,7 @@ async def main():
         sim_ids = await dcr_ar.get_instances(graph_id)
         if sim_id in sim_ids.keys():
             print(f"[i] Found the newly created instance with id: {sim_id}")
-            events = await dcr_ar.get_events(graph_id, sim_id, EventsFilter.ALL)
+            events = await dcr_ar.get_events(graph_id, sim_id, EventsFilter.ENABLED)
             for event in events:
                 print(
                     f"[i] Found event with label: {event.label} (id {event.id}, enabled {event.enabled}, pending {event.pending}, role {event.role if event.role else 'None'})"
@@ -224,7 +219,7 @@ async def main():
                                 f"[i] Successfully executed event: {event_to_execute.label}"
                             )
                         new_events = await dcr_ar.get_events(
-                            graph_id, sim_id, EventsFilter.ALL
+                            graph_id, sim_id, EventsFilter.ENABLED
                         )
                         print(
                             f"[i] After executing event {event_to_execute.label} with id {event_to_execute.id}"
