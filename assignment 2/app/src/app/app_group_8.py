@@ -48,20 +48,16 @@ class HelloWorld(toga.App):
         )
         logout_box.add(logout_button)
 
+        self.login_item = toga.OptionItem("Login", login_box)
+        self.all_instances_item = toga.OptionItem("All instances", all_instances_box)
+        self.instance_run_item = toga.OptionItem("Instance run", instance_box)
+        self.logout_item = toga.OptionItem("Logout", logout_box)
+
         self.option_container = toga.OptionContainer(
-            content=[
-                toga.OptionItem("Login", login_box),
-                toga.OptionItem("All instances", all_instances_box),
-                toga.OptionItem("Instance run", instance_box),
-                toga.OptionItem("Logout", logout_box),
-            ],
+            content=[self.login_item],  # Only show login initially, this sucks
             on_select=self.option_item_changed,
             style=Pack(direction=COLUMN),
         )
-
-        self.option_container.content["Logout"].enabled = False
-        self.option_container.content["All instances"].enabled = False
-        self.option_container.content["Instance run"].enabled = False
 
         self.main_window = toga.MainWindow(title=self.formal_name)
         self.main_window.content = self.option_container
@@ -111,6 +107,11 @@ class HelloWorld(toga.App):
         await self.show_instance_box()
 
     async def logout(self, widget):
+        self.option_container.content.append(
+            self.login_item
+        )  # this doesn't seem right, but what was being told to do in the feed back doesn't work.
+        self.option_container.current_tab = "Login"
+
         self.option_container.content["Login"].enabled = True
         self.option_container.content["All instances"].enabled = False
         self.option_container.content["Instance run"].enabled = False
@@ -123,6 +124,9 @@ class HelloWorld(toga.App):
         self.username_input.value = ""
         self.password_input.value = ""
         self.instances = {}
+        self.option_container.content.remove("All instances")
+        self.option_container.content.remove("Instance run")
+        self.option_container.content.remove("Logout")
 
     async def execute_event(self, widget):
         await self.dcr_ar.execute_event(
@@ -345,12 +349,12 @@ class HelloWorld(toga.App):
             self.user.role = dbc.get_dcr_role(email=self.user.email)
             print(f"[i] Role: {self.user.role}")
 
-            self.option_container.content["All instances"].enabled = True
-            self.option_container.content["Logout"].enabled = True
-            self.option_container.content["Instance run"].enabled = True
-
+            self.option_container.content.append(self.all_instances_item)
             self.option_container.current_tab = "All instances"
-            self.option_container.content["Login"].enabled = False
+            self.option_container.content.remove("Login")
+            self.option_container.content.append(self.instance_run_item)
+            self.option_container.content.append(self.logout_item)
+
         else:
             print("Login failed, try again.")
 
