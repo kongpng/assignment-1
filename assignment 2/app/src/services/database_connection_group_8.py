@@ -152,10 +152,14 @@ def delete_instance(id):
         cursor = cnx.cursor(buffered=True)
         cursor.execute(
             sql_query_template["delete_instance_from_user_instance"],
-            {"id": id},
+            {"instance_id": id},  # Changed to instance_id to match template
             multi=False,
         )
-        cursor.execute(sql_query_template["delete_instance"], {"id": id}, multi=False)
+        cursor.execute(
+            sql_query_template["delete_instance"], 
+            {"instance_id": id},  # Changed to instance_id to match template
+            multi=False
+        )
         cnx.commit()
         cursor.close()
         cnx.close()

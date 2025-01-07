@@ -317,17 +317,12 @@ class HelloWorld(toga.App):
 
     async def delete_all_instances(self, widget):
         user_instances = dbc.get_instances_for_user(self.user.email)
-
         if user_instances:
-            for instance_id in user_instances:
-                events = await self.dcr_ar.get_events(
-                    self.graph_id, instance_id, EventsFilter.ALL
-                )
-                has_pending = any(event.pending for event in events)
-                if not has_pending:
-                    await self.dcr_ar.delete_instance(self.graph_id, instance_id)
-                    dbc.delete_instance(instance_id)
-
+            for (
+                instance_id,
+                _,
+            ) in user_instances:
+                dbc.delete_instance(instance_id)
             self.instance_box.clear()
             self.instance_box.add(
                 toga.Label(
@@ -335,7 +330,6 @@ class HelloWorld(toga.App):
                 )
             )
             self.instance_box.refresh()
-
             await self.show_instances_box()
 
     async def login_handler(self, widget):
