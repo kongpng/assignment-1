@@ -157,9 +157,9 @@ class HelloWorld(toga.App):
             if len(dcr_ar_instances) > 0 and db_instances:
                 db_instance_ids = [instance_id for instance_id, _ in db_instances]
                 self.instances = {
-                    instance_id: name
+                    int(instance_id): name
                     for instance_id, name in dcr_ar_instances.items()
-                    if instance_id in db_instance_ids
+                    if int(instance_id) in db_instance_ids
                 }
 
             label = toga.Label("All instances will be listed here")
