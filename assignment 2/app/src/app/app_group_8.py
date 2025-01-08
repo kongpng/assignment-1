@@ -97,6 +97,33 @@ class HelloWorld(toga.App):
 
         return self.instance_box
 
+    events_with_data = ['Activity0']
+
+    def display_data_event(self,event_id):
+        match event_id:
+            case 'Activity0':
+                self.display_age_form()
+        self.option_container.current_tab = "Data event"
+
+    def display_age_form(self):
+        self.data_event_box.clear()
+        age_label = toga.Label("What is your age?", style=Pack(padding=(0,10)))
+        self.age_input = toga.NumberInput(min=1, max=150, step=1)
+        age_from_db = dbc.select_age(self.current_instance_id, 'Activity0')
+        if age_from_db:
+            self.age_input.value = age_from_db
+        self.data_event_box.add(age_label)
+        self.data_event_box.add(self.age_input)
+
+    async def submit_age(self,widget):
+        age = self.age_input.value
+        if age:
+            await self.dcr_ar.execute_data_event(self.graph_id, self.current_instance_id, 'Activity0', age)
+            dbc.insert_age(self.current_instance_id, 'Activity0', age)
+            self.option_container.current_tab = 'Instance run'
+            await self.after_execute_event()
+
+
     async def option_item_changed(self, widget):
         if widget.current_tab.text == "All instances":
             await self.show_instances_box()
@@ -128,7 +155,7 @@ class HelloWorld(toga.App):
         self.option_container.content.remove("Instance run")
         self.option_container.content.remove("Logout")
 
-    async def execute_event(self, widget):
+    async def execute_event(self, widget): #Bliver nu fucking ændret?
         await self.dcr_ar.execute_event(
             self.graph_id, self.current_instance_id, widget.id
         )
@@ -140,6 +167,14 @@ class HelloWorld(toga.App):
 
         dbc.update_instance(self.current_instance_id, not has_pending)
 
+        await self.show_instance_box()
+
+    async def after_execute_event(self):
+        pending_events = await self.dcr_ar.execute_event(self.graph_id, self.current_instance_id, EventsFilter.PENDING)
+        valid = True
+        if len(pending_events)>0:
+            valid = False
+        dbc.update_instance(self.current_instance_id, valid)
         await self.show_instance_box()
 
     async def show_instances_box(self):
