@@ -128,17 +128,6 @@ class DcrActiveRepository(object):
             except Exception as e:
                 print(f"error occured {e}")
                 raise
-    
-    async def execute_data_event(self, graph_id,instance_id,event_id, data):
-        url = f"https://repository.dcrgraphs.net/api/{graph_id}/sims/{instance_id}/events/{event_id}"
-        async with httpx.AsyncClient() as client:
-            post_data = {
-                "simulationID": int(instance_id),
-                "dcrGraphId": int(graph_id),
-                "dataXML": str(data)
-            }
-        response = await client.post(url, json=post_data, auth=self.basic_auth)
-        return response.status_code
 
     async def get_events(
         self, graph_id, instance_id, filter: EventsFilter = EventsFilter.ENABLED_OR_PENDING
@@ -160,6 +149,17 @@ class DcrActiveRepository(object):
                 print(f"error occured {e}")
                 raise
 
+
+    async def execute_data_event(self, graph_id, instance_id, event_id, data):
+        url = f"https://repository.dcrgraphs.net/api/graphs/{graph_id}/sims/{instance_id}/events/{event_id}"
+        async with httpx.AsyncClient() as client:
+            post_data = {
+                "simulationID": int(instance_id),
+                "dcrGraphId": int(graph_id),
+                "dataXML": int(data)
+            }
+            response = await client.post(url, json=post_data, auth=self.basic_auth)
+            return response.status_code
 
 async def check_login_from_dcr(username, password):
     """
@@ -257,6 +257,7 @@ async def main():
             print(f"[i] Deleting any rogue instances. Please wait!")
         for inst_id in sim_ids:
             await dcr_ar.delete_instance(graph_id, inst_id)
+
 
 
 if __name__ == "__main__":
