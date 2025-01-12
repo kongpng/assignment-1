@@ -20,6 +20,7 @@ class HelloWorld(toga.App):
     option_container = None
     all_instances_box = None
     instance_box = None
+    data_event_box = None
     current_instance_id = None
     instances: dict = {}
     user: DcrUser = None
@@ -39,6 +40,7 @@ class HelloWorld(toga.App):
         login_box = self.login_box_widget()
         all_instances_box = self.all_instances_widget()
         instance_box = self.instance_box()
+        data_event_box = self.data_event_box()
 
         logout_box = toga.Box(style=Pack(direction=COLUMN, flex=1))
         logout_button = toga.Button(
@@ -52,6 +54,8 @@ class HelloWorld(toga.App):
         self.all_instances_item = toga.OptionItem("All instances", all_instances_box)
         self.instance_run_item = toga.OptionItem("Instance run", instance_box)
         self.logout_item = toga.OptionItem("Logout", logout_box)
+        self.data_event_item = toga.OptionItem("Data Event", self.data_event_box)
+        
 
         self.option_container = toga.OptionContainer(
             content=[self.login_item],  # Only show login initially, this sucks
@@ -62,6 +66,9 @@ class HelloWorld(toga.App):
         self.main_window = toga.MainWindow(title=self.formal_name)
         self.main_window.content = self.option_container
         self.main_window.show()
+
+
+
 
     def login_box_widget(self) -> toga.Box:
         login_box = toga.Box(style=Pack(direction=COLUMN, flex=1))
@@ -97,6 +104,84 @@ class HelloWorld(toga.App):
 
         return self.instance_box
 
+    events_with_data = ['Activity7']
+
+    def data_event_box(self) -> toga.Box:
+        self.data_event_box = toga.Box(style=Pack(direction=COLUMN, flex=1))
+        label = toga.Label(
+            "Special action needs to be taken for this event!"
+        )
+        self.data_event_box.add(label)
+
+        return self.data_event_box
+
+    def display_data_event(self, event_id):
+        match event_id:
+            case 'Activity7':
+                self.option_container.content.append(self.data_event_item)
+                self.option_container.current_tab = "Data Event"
+                self.option_container.content.remove("Logout")
+                self.option_container.content.remove("All instances")
+                self.option_container.content.remove("Instance run")
+                self.display_meds_needs_form()
+
+    def display_meds_needs_form(self):
+        self.data_event_box.clear()
+
+        form_box = toga.Box(style=Pack(direction=COLUMN, padding=10))
+
+        # Label til at forklare valget
+        instruction_label = toga.Label(
+            text="Do you feel you need medication, or can you live without it?",
+            style=Pack(padding=(0, 10)),
+        )
+
+        # Valgmuligheder
+        self.choice_selection = toga.Selection(
+            items=["Needs medication", "Can live without it"],
+            style=Pack(padding=(5, 10)),
+        )
+
+        # Knappen til at gemme valget
+        submit_button = toga.Button(
+            text="Submit Choice",
+            on_press=self.submit_meds_needs,
+            style=Pack(padding=5),
+        )
+
+        # Tilføj widgets til formularen
+        form_box.add(instruction_label)
+        form_box.add(self.choice_selection)
+        form_box.add(submit_button)
+
+        self.data_event_box.add(form_box)
+        self.data_event_box.refresh()
+
+    async def submit_meds_needs(self, widget):
+        # Få brugerens valg fra dropdown
+        choice = self.choice_selection.value
+        choice_id = None
+
+        # Map valget til event1 eller event2
+        if choice == "Needs medication":
+            choice_id = 2
+        elif choice == "Can live without it":
+            choice_id = 1
+        else:
+            print("[x] No valid choice selected.")
+            return
+
+        if choice_id:
+            await self.dcr_ar.execute_data_event(self.graph_id, self.current_instance_id, "Activity7", choice_id)
+            dbc.insert_or_update_choice(self.current_instance_id, "Activity7", choice_id)
+            self.option_container.content.append(self.all_instances_item)
+            self.option_container.content.append(self.instance_run_item)
+            self.option_container.content.append(self.logout_item)
+            self.option_container.current_tab = "Instance run"
+            self.option_container.content.remove("Data Event")
+            await self.after_execute_event()
+
+
     async def option_item_changed(self, widget):
         if widget.current_tab.text == "All instances":
             await self.show_instances_box()
@@ -128,18 +213,22 @@ class HelloWorld(toga.App):
         self.option_container.content.remove("Instance run")
         self.option_container.content.remove("Logout")
 
-    async def execute_event(self, widget):
-        await self.dcr_ar.execute_event(
-            self.graph_id, self.current_instance_id, widget.id
-        )
+    async def execute_event(self, widget): 
+        print(f'[i] You want to execute event: {widget.id}')
+        event_id = widget.id
+        if event_id in self.events_with_data:
+            self.display_data_event(event_id)
+        else:
+            executed = await self.dcr_ar.execute_event(self.graph_id, self.current_instance_id, widget.id)
+            print(f'[i] executed: {executed}')
+            await self.after_execute_event
 
-        events = await self.dcr_ar.get_events(
-            self.graph_id, self.current_instance_id, EventsFilter.ALL
-        )
-        has_pending = any(event.pending for event in events)
-
-        dbc.update_instance(self.current_instance_id, not has_pending)
-
+    async def after_execute_event(self):
+        pending_events = await self.dcr_ar.execute_event(self.graph_id, self.current_instance_id, EventsFilter.PENDING)
+        valid = True
+        if len(pending_events)>0:
+            valid = False
+        dbc.update_instance(self.current_instance_id, valid)
         await self.show_instance_box()
 
     async def show_instances_box(self):
@@ -281,6 +370,8 @@ class HelloWorld(toga.App):
                 events_box.add(event_button)
 
         self.instance_box.add(events_box)
+
+
         self.instance_box.refresh()
 
     async def delete_instance_by_id(self, widget):

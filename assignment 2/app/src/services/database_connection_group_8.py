@@ -33,6 +33,25 @@ sql_query_template["delete_instance"] = (
 )
 
 
+#Event data:
+sql_query_template["insert_or_update_choice_data"] = (
+    f"INSERT INTO DataEvents (InstanceID, EventID, Choice) "
+    f"VALUES (%(instance_id)s, %(event_id)s, %(choice_value)s) "
+    f"ON DUPLICATE KEY UPDATE Choice = %(choice_value)s"
+)
+
+sql_query_template["select_personal_data"] = (
+    f"SELECT Choice FROM DataEvents "
+    f"WHERE InstanceID = %(instance_id)s AND EventID = %(event_id)s"
+)
+
+sql_query_template["delete_choice_data"] = (
+    f"DELETE FROM DataEvents WHERE InstanceID = %(instance_id)s"
+)
+
+
+
+
 def db_connect():
     from pathlib import Path
 
@@ -156,6 +175,11 @@ def delete_instance(id):
             multi=False,
         )
         cursor.execute(
+            sql_query_template["delete_choice_data"], 
+            {"instance_id": id},  # Delete choice data.
+            multi=False
+        )
+        cursor.execute(
             sql_query_template["delete_instance"], 
             {"instance_id": id},  # Changed to instance_id to match template
             multi=False
@@ -165,3 +189,24 @@ def delete_instance(id):
         cnx.close()
     except Exception as ex:
         print(f"[x] error delete_instance! {ex}")
+
+
+
+####
+# Event data functions:
+####
+
+def insert_or_update_choice(instance_id, event_id, choice_value):
+    try:
+        cnx = db_connect()
+        cursor = cnx.cursor(buffered=True)
+        cursor.execute(sql_query_template["insert_or_update_personal_data"], 
+                       {"instance_id": instance_id, 
+                        "event_id": event_id, 
+                        "choice_value": choice_value})
+        cnx.commit()
+        cursor.close()
+        cnx.close()
+    except Exception as ex:
+        print(f"[x] Error in insert_or_update_choice: {ex}")
+
