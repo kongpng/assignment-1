@@ -40,11 +40,6 @@ sql_query_template["insert_or_update_choice_data"] = (
     f"ON DUPLICATE KEY UPDATE Choice = %(choice_value)s"
 )
 
-sql_query_template["select_personal_data"] = (
-    f"SELECT Choice FROM DataEvents "
-    f"WHERE InstanceID = %(instance_id)s AND EventID = %(event_id)s"
-)
-
 sql_query_template["delete_choice_data"] = (
     f"DELETE FROM DataEvents WHERE InstanceID = %(instance_id)s"
 )
@@ -200,7 +195,7 @@ def insert_or_update_choice(instance_id, event_id, choice_value):
     try:
         cnx = db_connect()
         cursor = cnx.cursor(buffered=True)
-        cursor.execute(sql_query_template["insert_or_update_personal_data"], 
+        cursor.execute(sql_query_template["insert_or_update_choice_data"], 
                        {"instance_id": instance_id, 
                         "event_id": event_id, 
                         "choice_value": choice_value})
