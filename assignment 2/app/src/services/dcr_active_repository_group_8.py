@@ -149,7 +149,6 @@ class DcrActiveRepository(object):
                 print(f"error occured {e}")
                 raise
 
-
     async def execute_data_event(self, graph_id, instance_id, event_id, data):
         url = f"https://repository.dcrgraphs.net/api/graphs/{graph_id}/sims/{instance_id}/events/{event_id}"
         async with httpx.AsyncClient() as client:

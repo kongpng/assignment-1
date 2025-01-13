@@ -130,26 +130,22 @@ class HelloWorld(toga.App):
 
         form_box = toga.Box(style=Pack(direction=COLUMN, padding=10))
 
-        # Label til at forklare valget
         instruction_label = toga.Label(
             text="Do you feel you need medication, or can you live without it?",
             style=Pack(padding=(0, 10)),
         )
 
-        # Valgmuligheder
         self.choice_selection = toga.Selection(
             items=["Needs medication", "Can live without it"],
             style=Pack(padding=(5, 10)),
         )
 
-        # Knappen til at gemme valget
         submit_button = toga.Button(
             text="Submit Choice",
             on_press=self.submit_meds_needs,
             style=Pack(padding=5),
         )
 
-        # Tilføj widgets til formularen
         form_box.add(instruction_label)
         form_box.add(self.choice_selection)
         form_box.add(submit_button)
@@ -158,15 +154,13 @@ class HelloWorld(toga.App):
         self.data_event_box.refresh()
 
     async def submit_meds_needs(self, widget):
-        # Få brugerens valg fra dropdown
         choice = self.choice_selection.value
         choice_id = None
 
-        # Map valget til event1 eller event2
         if choice == "Needs medication":
-            choice_id = 2
-        elif choice == "Can live without it":
             choice_id = 1
+        elif choice == "Can live without it":
+            choice_id = 2
         else:
             print("[x] No valid choice selected.")
             return
@@ -180,7 +174,6 @@ class HelloWorld(toga.App):
             self.option_container.current_tab = "Instance run"
             self.option_container.content.remove("Data Event")
             await self.after_execute_event()
-
 
     async def option_item_changed(self, widget):
         if widget.current_tab.text == "All instances":
@@ -221,10 +214,10 @@ class HelloWorld(toga.App):
         else:
             executed = await self.dcr_ar.execute_event(self.graph_id, self.current_instance_id, widget.id)
             print(f'[i] executed: {executed}')
-            await self.after_execute_event
+            await self.after_execute_event()
 
     async def after_execute_event(self):
-        pending_events = await self.dcr_ar.execute_event(self.graph_id, self.current_instance_id, EventsFilter.PENDING)
+        pending_events = await self.dcr_ar.get_events(self.graph_id, self.current_instance_id, EventsFilter.PENDING)
         valid = True
         if len(pending_events)>0:
             valid = False
