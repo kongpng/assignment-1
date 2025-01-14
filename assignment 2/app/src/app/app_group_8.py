@@ -25,6 +25,7 @@ class HelloWorld(toga.App):
     instances: dict = {}
     user: DcrUser = None
     connected: bool = False
+    events_with_data = ["Activity7"]
 
     def startup(self):
         name_label = toga.Label(
@@ -41,6 +42,7 @@ class HelloWorld(toga.App):
         all_instances_box = self.all_instances_widget()
         instance_box = self.instance_box()
         data_event_box = self.data_event_box()
+        patient_box = self.register_patient_prescription_widget()
 
         logout_box = toga.Box(style=Pack(direction=COLUMN, flex=1))
         logout_button = toga.Button(
@@ -54,9 +56,8 @@ class HelloWorld(toga.App):
         self.all_instances_item = toga.OptionItem("All instances", all_instances_box)
         self.instance_run_item = toga.OptionItem("Instance run", instance_box)
         self.logout_item = toga.OptionItem("Logout", logout_box)
-        self.data_event_item = toga.OptionItem("Data Event", self.data_event_box)
-        
-
+        self.data_event_item = toga.OptionItem("Data Event", data_event_box)
+        self.patient_item = toga.OptionItem("Register patient", patient_box)
         self.option_container = toga.OptionContainer(
             content=[self.login_item],  # Only show login initially, this sucks
             on_select=self.option_item_changed,
@@ -66,9 +67,6 @@ class HelloWorld(toga.App):
         self.main_window = toga.MainWindow(title=self.formal_name)
         self.main_window.content = self.option_container
         self.main_window.show()
-
-
-
 
     def login_box_widget(self) -> toga.Box:
         login_box = toga.Box(style=Pack(direction=COLUMN, flex=1))
@@ -104,25 +102,22 @@ class HelloWorld(toga.App):
 
         return self.instance_box
 
-    events_with_data = ['Activity7']
-
     def data_event_box(self) -> toga.Box:
         self.data_event_box = toga.Box(style=Pack(direction=COLUMN, flex=1))
-        label = toga.Label(
-            "Special action needs to be taken for this event!"
-        )
+        label = toga.Label("Special action needs to be taken for this event!")
         self.data_event_box.add(label)
 
         return self.data_event_box
 
     def display_data_event(self, event_id):
         match event_id:
-            case 'Activity7':
+            case "Activity7":
                 self.option_container.content.append(self.data_event_item)
                 self.option_container.current_tab = "Data Event"
                 self.option_container.content.remove("Logout")
                 self.option_container.content.remove("All instances")
                 self.option_container.content.remove("Instance run")
+
                 self.display_meds_needs_form()
 
     def display_meds_needs_form(self):
@@ -166,12 +161,17 @@ class HelloWorld(toga.App):
             return
 
         if choice_id:
-            await self.dcr_ar.execute_data_event(self.graph_id, self.current_instance_id, "Activity7", choice_id)
-            dbc.insert_or_update_choice(self.current_instance_id, "Activity7", choice_id)
+            await self.dcr_ar.execute_data_event(
+                self.graph_id, self.current_instance_id, "Activity7", choice_id
+            )
+            dbc.insert_or_update_choice(
+                self.current_instance_id, "Activity7", choice_id
+            )
             self.option_container.content.append(self.all_instances_item)
             self.option_container.content.append(self.instance_run_item)
             self.option_container.content.append(self.logout_item)
-            self.option_container.current_tab = "Instance run"
+            self.option_container.content.append(self.patient_item)
+            self.option_container.current_tab = "Register patient"
             self.option_container.content.remove("Data Event")
             await self.after_execute_event()
 
@@ -205,21 +205,109 @@ class HelloWorld(toga.App):
         self.option_container.content.remove("All instances")
         self.option_container.content.remove("Instance run")
         self.option_container.content.remove("Logout")
+        self.option_container.content.remove("Register patient")
 
-    async def execute_event(self, widget): 
-        print(f'[i] You want to execute event: {widget.id}')
+    def register_patient_prescription_widget(self) -> toga.Box:
+        form_box = toga.Box(style=Pack(direction=COLUMN, padding=10))
+
+        title_label = toga.Label(
+            text="Patient Prescription Information",
+            style=Pack(padding=(5), font_size=16),
+        )
+        cpr_label = toga.Label(text="CPR Number:", style=Pack(padding=(5)))
+        name_label = toga.Label(text="Patient Name:", style=Pack(padding=(5)))
+        address_label = toga.Label(text="Address:", style=Pack(padding=5))
+        patient_phone_label = toga.Label(text="Phone number:", style=Pack(padding=5))
+        medication_label = toga.Label(
+            text="Prescribed Medication:", style=Pack(padding=5)
+        )
+
+        self.cpr_number = toga.TextInput(style=Pack(flex=1))
+        self.patient_name = toga.TextInput(style=Pack(flex=1))
+        self.patient_address = toga.TextInput(style=Pack(flex=1))
+        self.patient_phone_number = toga.TextInput(style=Pack(flex=1))
+        self.prescribed_medication = toga.TextInput(style=Pack(flex=1))
+
+        submit_button = toga.Button(
+            text="Submit Prescription",
+            on_press=self.submit_prescription,
+            style=Pack(padding=5),
+        )
+
+        form_box.add(title_label)
+        form_box.add(cpr_label)
+        form_box.add(self.cpr_number)
+        form_box.add(name_label)
+        form_box.add(self.patient_name)
+        form_box.add(address_label)
+        form_box.add(self.patient_address)
+        form_box.add(patient_phone_label)
+        form_box.add(self.patient_phone_number)
+        form_box.add(medication_label)
+        form_box.add(self.prescribed_medication)
+        form_box.add(submit_button)
+
+        return form_box
+
+    async def submit_prescription(self, widget):
+        if not all(
+            [
+                self.cpr_number.value,
+                self.patient_name.value,
+                self.patient_address.value,
+                self.patient_phone_number.value,
+                self.prescribed_medication.value,
+            ]
+        ):
+            self.main_window.info_dialog(
+                "Validation Error",
+                "All fields are required. Please fill in all information.",
+            )
+            return
+
+        try:
+            instance_id = int(self.current_instance_id)
+            success = dbc.insert_patient_information(
+                cpr=self.cpr_number.value,
+                name=self.patient_name.value,
+                address=self.patient_address.value,
+                phone_number=self.patient_phone_number.value,
+                medication=self.prescribed_medication.value,
+                instance_id=instance_id,
+            )
+
+            if success:
+                self.option_container.current_tab = "Instance run"
+                self.option_container.content.remove("Register patient")
+
+            else:
+                self.main_window.error_dialog(
+                    "Registration Error", "Failed to register prescription in database."
+                )
+
+        except Exception as e:
+            self.main_window.error_dialog(
+                "Registration Error", f"Failed to register prescription: {str(e)}"
+            )
+
+    async def execute_event(self, widget):
+        print(f"[i] You want to execute event: {widget.id}")
         event_id = widget.id
         if event_id in self.events_with_data:
             self.display_data_event(event_id)
         else:
-            executed = await self.dcr_ar.execute_event(self.graph_id, self.current_instance_id, widget.id)
-            print(f'[i] executed: {executed}')
+            executed = await self.dcr_ar.execute_event(
+                self.graph_id, self.current_instance_id, widget.id
+            )
+            print(f"[i] executed: {executed}")
             await self.after_execute_event()
 
     async def after_execute_event(self):
-        pending_events = await self.dcr_ar.get_events(self.graph_id, self.current_instance_id, EventsFilter.PENDING)
+        pending_events = await self.dcr_ar.get_events(
+            self.graph_id, self.current_instance_id, EventsFilter.PENDING
+        )
         valid = True
-        if len(pending_events)>0:
+        if len(pending_events) > 0:
             valid = False
         dbc.update_instance(self.current_instance_id, valid)
         await self.show_instance_box()
@@ -363,8 +451,6 @@ class HelloWorld(toga.App):
                 events_box.add(event_button)
 
         self.instance_box.add(events_box)
-
-
         self.instance_box.refresh()
 
     async def delete_instance_by_id(self, widget):
@@ -432,7 +518,6 @@ class HelloWorld(toga.App):
             self.option_container.content.remove("Login")
             self.option_container.content.append(self.instance_run_item)
             self.option_container.content.append(self.logout_item)
-
         else:
             print("Login failed, try again.")
 

@@ -1,3 +1,5 @@
+from typing import Optional
+from datetime import datetime
 from mysql.connector import connect
 
 db_password = "KUnet1235"
@@ -32,8 +34,7 @@ sql_query_template["delete_instance"] = (
     f"DELETE FROM Instances WHERE InstanceID = %(instance_id)s"
 )
 
-
-#Event data:
+# Event data:
 sql_query_template["insert_or_update_choice_data"] = (
     f"INSERT INTO DataEvents (InstanceID, EventID, Choice) "
     f"VALUES (%(instance_id)s, %(event_id)s, %(choice_value)s) "
@@ -44,7 +45,17 @@ sql_query_template["delete_choice_data"] = (
     f"DELETE FROM DataEvents WHERE InstanceID = %(instance_id)s"
 )
 
+sql_query_template["insert_patient_information"] = (
+    f"INSERT INTO DataEvents "
+    f"(InstanceID, EventID, CPR, Name, Address, PhoneNumber, Medication) "
+    f"VALUES (%(instance_id)s, 'PrescribeMedication', %(cpr)s, %(name)s, %(address)s, %(phone_number)s, %(medication)s)"
+)
 
+sql_query_template["get_patient_prescription"] = (
+    f"SELECT CPR as cpr, Name as name, Address as address, PhoneNumber as phone_number, "
+    f"Medication as medication FROM DataEvents "
+    f"WHERE InstanceID = %(instance_id)s AND EventID = %(event_id)s"
+)
 
 
 def db_connect():
@@ -170,14 +181,14 @@ def delete_instance(id):
             multi=False,
         )
         cursor.execute(
-            sql_query_template["delete_choice_data"], 
+            sql_query_template["delete_choice_data"],
             {"instance_id": id},  # Delete choice data.
-            multi=False
+            multi=False,
         )
         cursor.execute(
-            sql_query_template["delete_instance"], 
+            sql_query_template["delete_instance"],
             {"instance_id": id},  # Changed to instance_id to match template
-            multi=False
+            multi=False,
         )
         cnx.commit()
         cursor.close()
@@ -186,22 +197,83 @@ def delete_instance(id):
         print(f"[x] error delete_instance! {ex}")
 
 
-
 ####
 # Event data functions:
 ####
+
 
 def insert_or_update_choice(instance_id, event_id, choice_value):
     try:
         cnx = db_connect()
         cursor = cnx.cursor(buffered=True)
-        cursor.execute(sql_query_template["insert_or_update_choice_data"], 
-                       {"instance_id": instance_id, 
-                        "event_id": event_id, 
-                        "choice_value": choice_value})
+        cursor.execute(
+            sql_query_template["insert_or_update_choice_data"],
+            {
+                "instance_id": instance_id,
+                "event_id": event_id,
+                "choice_value": choice_value,
+            },
+        )
         cnx.commit()
         cursor.close()
         cnx.close()
     except Exception as ex:
         print(f"[x] Error in insert_or_update_choice: {ex}")
 
+
+def insert_patient_information(
+    cpr: str,
+    name: str,
+    address: str,
+    phone_number: str,
+    medication: str,
+    instance_id: int,
+    created_at: Optional[datetime] = None,
+) -> bool:
+    try:
+        # should be a string, and length we use is always 10
+        if not (isinstance(cpr, str) and len(cpr) == 10 and cpr.isdigit()):
+            raise ValueError("CPR must be a 10-digit string")
+        timestamp = created_at or datetime.now()
+
+        cnx = db_connect()
+        cursor = cnx.cursor(buffered=True)
+
+        cursor.execute(
+            sql_query_template["insert_patient_information"],
+            {
+                "cpr": cpr,
+                "name": name,
+                "address": address,
+                "phone_number": phone_number,
+                "medication": medication,
+                "instance_id": instance_id,
+                "created_at": timestamp.isoformat(),
+            },
+            multi=False,
+        )
+        cnx.commit()
+        cursor.close()
+        cnx.close()
+        return True
+
+    except Exception as ex:
+        print(f"[x] Error inserting patient information: {ex}")
+        return False
+
+
+def get_patient_prescription(instance_id: int) -> Optional[dict]:
+    """Get existing prescription data for an instance if it exists."""
+    try:
+        cnx = db_connect()
+        cursor = cnx.cursor(dictionary=True)
+        cursor.execute(
+            sql_query_template["get_patient_prescription"], {"instance_id": instance_id}
+        )
+        result = cursor.fetchone()
+        cursor.close()
+        cnx.close()
+        return result
+    except Exception as ex:
+        print(f"[x] Error getting patient prescription: {ex}")
+        return None
